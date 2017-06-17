@@ -19,38 +19,8 @@
 
 package org.comixed.ui;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class GuiConfiguration
-{
-    private MainFrame mainFrame = new MainFrame();
-    private MainClientPanel mainClientPanel = new MainClientPanel();
-    private StatusBar statusBar = new StatusBar();
-    private MainMenuBar mainMenuBar = new MainMenuBar();
-
-    @Bean
-    public MainFrame mainFrame()
-    {
-        return mainFrame;
-    }
-
-    @Bean
-    public MainClientPanel mainClientPanel()
-    {
-        return mainClientPanel;
-    }
-
-    @Bean
-    public StatusBar statusBar()
-    {
-        return statusBar;
-    }
-
-    @Bean
-    public MainMenuBar mainMenuBar()
-    {
-        return mainMenuBar;
-    }
-}
+public class GuiContext
+{}
