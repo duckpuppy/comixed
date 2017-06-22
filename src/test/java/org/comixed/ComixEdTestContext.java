@@ -17,27 +17,17 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed;
 
-import org.comixed.library.model.Comic;
-import org.comixed.library.model.Page;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
-/**
- * <code>ImageEntryLoader</code> loads an image and makes it a {@link Page} for
- * a comic.
- * 
- * @author Darryl L. Pierce
- *
- */
-@Component
-public class ImageEntryLoader extends AbstractEntryLoader
+@Configuration
+@ComponentScan(basePackages =
+{"org.comixed.library",
+ "org.comixed.repositories",
+ "org.comixed.tasks"})
+public class ComixEdTestContext
 {
-    @Override
-    public void loadContent(Comic comic, String filename, byte[] content)
-    {
-        logger.debug("Loading image into comic");
-        Page page = new Page(filename, content);
-        comic.addPage(comic.getPageCount(), page);
-    }
+
 }

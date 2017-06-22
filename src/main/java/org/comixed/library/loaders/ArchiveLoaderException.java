@@ -1,17 +1,17 @@
 /*
  * ComixEd - A digital comic book library management application.
  * Copyright (C) 2017, Darryl L. Pierce
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.package
  * org.comixed;
@@ -19,25 +19,24 @@
 
 package org.comixed.library.loaders;
 
-import org.comixed.library.model.Comic;
-import org.comixed.library.model.Page;
-import org.springframework.stereotype.Component;
-
 /**
- * <code>ImageEntryLoader</code> loads an image and makes it a {@link Page} for
- * a comic.
- * 
+ * <code>ArchiveLoaderException</code> is thrown when an error occurs while
+ * working with the contents of an archive.
+ *
  * @author Darryl L. Pierce
  *
  */
-@Component
-public class ImageEntryLoader extends AbstractEntryLoader
+public class ArchiveLoaderException extends Exception
 {
-    @Override
-    public void loadContent(Comic comic, String filename, byte[] content)
+    private static final long serialVersionUID = 5895095739317473196L;
+
+    public ArchiveLoaderException(String message)
     {
-        logger.debug("Loading image into comic");
-        Page page = new Page(filename, content);
-        comic.addPage(comic.getPageCount(), page);
+        super(message);
+    }
+
+    public ArchiveLoaderException(String message, Exception cause)
+    {
+        super(message, cause);
     }
 }
