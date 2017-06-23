@@ -20,46 +20,61 @@
 package org.comixed.ui.actions;
 
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.Locale;
 
 import javax.swing.AbstractAction;
-import javax.swing.JOptionPane;
+import javax.swing.JFileChooser;
 
+import org.comixed.tasks.AddComicWorkerTask;
+import org.comixed.tasks.Worker;
 import org.comixed.ui.MainFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>FileExitAction</code> responds to the File->Exit menu item.
+ * <code>FileAddAction</code> lets the user select a single comic file to add to
+ * the library.
  * 
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class FileExitAction extends AbstractAction
+public class FileAddAction extends AbstractAction
 {
-    private static final long serialVersionUID = 7400132309418120634L;
+    private static final long serialVersionUID = -3668945997213296168L;
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private MessageSource messageSource;
     @Autowired
+    private JFileChooser fileChooser;
+    @Autowired
     private MainFrame mainFrame;
+    @Autowired
+    private Worker worker;
+    @Autowired
+    private ObjectFactory<AddComicWorkerTask> taskFactory;
 
     @Override
     public void actionPerformed(ActionEvent e)
     {
-        int choice = JOptionPane.showConfirmDialog(mainFrame,
-                                                   messageSource.getMessage("dialog.confirm.exit.label", null,
-                                                                            Locale.getDefault()),
-                                                   messageSource.getMessage("dialog.confirm.exit.title", null,
-                                                                            Locale.getDefault()),
-                                                   JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (choice == JOptionPane.YES_OPTION)
+        logger.debug("Asking user to select a comic file to load");
+
+        fileChooser.setDialogTitle(messageSource.getMessage("dialog.file-chooser.add.title", null,
+                                                            Locale.getDefault()));
+        if (fileChooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION)
         {
-            mainFrame.dispatchEvent(new WindowEvent(mainFrame, WindowEvent.WINDOW_CLOSING));
+            File file = fileChooser.getSelectedFile();
+            logger.debug("User chose file: " + file.getAbsolutePath());
+            AddComicWorkerTask task = taskFactory.getObject();
+            task.setFile(file.getAbsoluteFile());
+            worker.addTasksToQueue(task);
         }
     }
-
 }
