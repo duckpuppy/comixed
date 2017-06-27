@@ -19,11 +19,9 @@
 
 package org.comixed.ui;
 
-import java.awt.BorderLayout;
+import javax.swing.JTable;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-
+import org.comixed.library.model.ComicTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -31,31 +29,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>MainClientPanel</code> manages the main portion of the application's
- * window.
+ * <code>ComicTableView</code> provides a detailed view of the comics in the
+ * library.
  * 
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class MainClientPanel extends JPanel implements
-                             InitializingBean
+public class ComicTableView extends JTable implements
+                            InitializingBean
 {
-    private static final long serialVersionUID = -6194561704845594236L;
+    private static final long serialVersionUID = -4512908003749212065L;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private ComicTableView tableView;
-
-    public MainClientPanel()
-    {
-        super(new BorderLayout(), true);
-    }
+    private ComicTableModel comicTableModel;
 
     @Override
     public void afterPropertiesSet() throws Exception
     {
-        logger.debug("Setting up table view");
-        this.add(new JScrollPane(tableView), BorderLayout.CENTER);
+        logger.debug("Connecting comic table to underlying model");
+        this.setModel(comicTableModel);
     }
 }
