@@ -17,23 +17,19 @@
  * org.comixed;
  */
 
-package org.comixed.repositories;
+package org.comixed.library.model;
 
-import org.comixed.library.model.Comic;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface ComicRepository extends
-                                 CrudRepository<Comic,
-                                                Long>
+/**
+ * <code>ComicSelectionListener</code> receives notifications when the selection
+ * model has changed.
+ * 
+ * @author Darryl L. Pierce
+ *
+ */
+public interface ComicSelectionListener
 {
     /**
-     * Finds a comic based on filename.
-     * 
-     * @param filename
-     *            the filename
-     * @return the comic
+     * Invoked when a change occurs to the selection model.
      */
-    Comic findByFilename(String filename);
+    void selectionChanged();
 }
