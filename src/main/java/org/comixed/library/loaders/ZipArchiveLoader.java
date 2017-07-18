@@ -20,14 +20,17 @@
 package org.comixed.library.loaders;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.zip.ZipEntry;
+import java.util.Enumeration;
 
 import org.apache.commons.compress.archivers.ArchiveException;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.comixed.library.model.Comic;
+import org.comixed.library.model.Page;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,23 +43,33 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZipArchiveLoader extends AbstractArchiveLoader
 {
+    public ZipArchiveLoader()
+    {
+        super("cbz");
+    }
+
     protected byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveLoaderException
     {
         File file = validateFile(comic);
 
         try
         {
-            FileInputStream istream = new FileInputStream(file);
-            ArchiveInputStream input = new ArchiveStreamFactory().createArchiveInputStream("zip", istream);
-            ZipEntry entry = null;
-            byte[] result = null;
+            // FileInputStream istream = new FileInputStream(file);
+            // ZipArchiveInputStream input = (ZipArchiveInputStream )new
+            // ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP,
+            // istream);
 
-            while ((entry = (ZipEntry )input.getNextEntry()) != null)
+            ZipFile input = new ZipFile(file);
+            byte[] result = null;
+            Enumeration<ZipArchiveEntry> entries = input.getEntries();
+
+            while (entries.hasMoreElements())
             {
+                ZipArchiveEntry entry = entries.nextElement();
                 String filename = entry.getName();
                 if (entryName == null || entryName.equals(filename))
                 {
-                    byte[] content = this.loadContent(entry.getName(), entry.getSize(), input);
+                    byte[] content = this.loadContent(entry.getName(), entry.getSize(), input.getInputStream(entry));
                     // if we were looking for a file, then we're done
                     if (entryName != null)
                     {
@@ -73,14 +86,47 @@ public class ZipArchiveLoader extends AbstractArchiveLoader
             }
 
             input.close();
-            istream.close();
 
             return result;
+        }
+        catch (IOException error)
+        {
+            throw new ArchiveLoaderException("unable to open file: " + file.getAbsolutePath(), error);
+        }
+    }
+
+    void saveComicInternal(Comic source, String filename) throws ArchiveLoaderException
+    {
+        logger.debug("Creating temporary file: " + filename);
+
+        ZipArchiveOutputStream zoutput = null;
+        try
+        {
+            zoutput = (ZipArchiveOutputStream )new ArchiveStreamFactory().createArchiveOutputStream(ArchiveStreamFactory.ZIP,
+                                                                                                    new FileOutputStream(filename));
+
+            // TODO write the comic meta-data to the archive
+            for (int index = 0;
+                 index < source.getPageCount();
+                 index++)
+            {
+                // TODO if the page is deleted, then skip it
+                Page page = source.getPage(index);
+                logger.debug("Adding entry: " + page.getFilename() + " size=" + page.getContent().length);
+                ZipArchiveEntry entry = new ZipArchiveEntry(page.getFilename());
+                entry.setSize(page.getContent().length);
+                zoutput.putArchiveEntry(entry);
+                zoutput.write(page.getContent());
+                zoutput.closeArchiveEntry();
+            }
+
+            zoutput.finish();
+            zoutput.close();
         }
         catch (IOException
                | ArchiveException error)
         {
-            throw new ArchiveLoaderException("unable to open file: " + file.getAbsolutePath(), error);
+            throw new ArchiveLoaderException("error creating comic archive", error);
         }
     }
 }

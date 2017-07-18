@@ -42,8 +42,8 @@ public class ZipArchiveLoaderTest
     private static final String TEST_FILE_ENTRY_2 = "example.png";
     private static final String TEST_FILE_ENTRY_1 = "example.jpg";
     private static final String TEST_FILE_ENTRY_0 = "example.jpeg";
-    private static final String TEST_CBZ_FILE = "src/test/resources/example.cbz";
-    private static final String TEST_CBR_FILE = "src/test/resources/example.cbr";
+    private static final String TEST_CBZ_FILE = "target/test-classes/example.cbz";
+    private static final String TEST_CBR_FILE = "target/test-classes/example.cbr";
 
     @Autowired
     private ZipArchiveLoader archiveLoader;
@@ -105,5 +105,26 @@ public class ZipArchiveLoaderTest
         byte[] result = archiveLoader.loadSingleFile(comic, TEST_FILE_ENTRY_1.substring(1));
 
         assertNull(result);
+    }
+
+    @Test
+    public void testSaveComic() throws ArchiveLoaderException
+    {
+        // load an existing comic
+        archiveLoader.loadComic(comic);
+
+        // now save it and reload it
+        String filename = archiveLoader.saveComic(comic);
+
+        Comic result = new Comic();
+
+        result.setFilename(filename);
+        archiveLoader.loadComic(result);
+
+        assertEquals(4, result.getPageCount());
+        assertEquals(TEST_FILE_ENTRY_0, result.getPage(0).getFilename());
+        assertEquals(TEST_FILE_ENTRY_1, result.getPage(1).getFilename());
+        assertEquals(TEST_FILE_ENTRY_2, result.getPage(2).getFilename());
+        assertEquals(TEST_FILE_ENTRY_3, result.getPage(3).getFilename());
     }
 }
