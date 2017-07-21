@@ -24,7 +24,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan(basePackages =
-{"org.comixed.library",
+{"org.comixed.adaptors",
+ "org.comixed.library",
  "org.comixed.repositories",
  "org.comixed.tasks"})
 public class ComixEdTestContext

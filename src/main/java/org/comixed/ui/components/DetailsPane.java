@@ -17,32 +17,39 @@
  * org.comixed;
  */
 
-package org.comixed.tasks;
+package org.comixed.ui.components;
 
-import org.apache.log4j.Logger;
-import org.comixed.adaptors.StatusAdaptor;
+import java.awt.GridLayout;
+
+import javax.swing.JPanel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
- * <code>AbstractWorkerTask</code> provides a foundation for creating new
- * {@link WorkerTask} types.
+ * <code>DetailsPane</code> shows details of the library, and of any selected
+ * comics, in the main window frame of the application.
  *
  * @author Darryl L. Pierce
  *
  */
-public abstract class AbstractWorkerTask implements
-                                         WorkerTask
+@Component
+public class DetailsPane extends JPanel implements
+                         InitializingBean
 {
-    protected static final Logger logger = Logger.getLogger(AbstractWorkerTask.class);
+    private static final long serialVersionUID = -2506202865075901419L;
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private StatusAdaptor statusAdaptor;
+    private LibraryDetailsPane libraryDetailsPane;
 
-    public AbstractWorkerTask()
-    {}
-
-    protected void showStatusText(String message)
+    @Override
+    public void afterPropertiesSet() throws Exception
     {
-        this.statusAdaptor.updateStatusText(message);
+        this.setLayout(new GridLayout(1, 1));
+        this.add(libraryDetailsPane);
     }
 }

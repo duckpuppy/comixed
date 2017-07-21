@@ -21,6 +21,7 @@ package org.comixed.tasks;
 
 import java.io.File;
 
+import org.comixed.adaptors.StatusAdaptor;
 import org.comixed.library.model.Comic;
 import org.comixed.library.model.ComicFileHandler;
 import org.comixed.library.model.ComicFileHandlerException;
@@ -34,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.MessageSource;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest
@@ -43,6 +45,12 @@ public class AddComicWorkerTaskTest
 
     @InjectMocks
     private AddComicWorkerTask task;
+
+    @Mock
+    private MessageSource messageSource;
+
+    @Mock
+    private StatusAdaptor statusAdaptor;
 
     @Mock
     private ComicFileHandler comicFileHandler;

@@ -17,32 +17,34 @@
  * org.comixed;
  */
 
-package org.comixed.tasks;
+package org.comixed.adaptors;
 
-import org.apache.log4j.Logger;
-import org.comixed.adaptors.StatusAdaptor;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
 
 /**
- * <code>AbstractWorkerTask</code> provides a foundation for creating new
- * {@link WorkerTask} types.
+ * <code>StatusAdaptor</code> relays status messages to registered components.
  *
  * @author Darryl L. Pierce
  *
  */
-public abstract class AbstractWorkerTask implements
-                                         WorkerTask
+@Component
+public class StatusAdaptor
 {
-    protected static final Logger logger = Logger.getLogger(AbstractWorkerTask.class);
+    List<StatusListener> listeners = new ArrayList<>();
 
-    @Autowired
-    private StatusAdaptor statusAdaptor;
-
-    public AbstractWorkerTask()
-    {}
-
-    protected void showStatusText(String message)
+    public void addStatusListener(StatusListener listener)
     {
-        this.statusAdaptor.updateStatusText(message);
+        this.listeners.add(listener);
+    }
+
+    public void updateStatusText(String message)
+    {
+        for (StatusListener listener : this.listeners)
+        {
+            listener.statusTextChanged(message);
+        }
     }
 }

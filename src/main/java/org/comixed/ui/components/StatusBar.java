@@ -1,61 +1,71 @@
 /*
  * ComixEd - A digital comic book library management application.
  * Copyright (C) 2017, Darryl L. Pierce
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.package
  * org.comixed;
  */
 
-package org.comixed.ui;
+package org.comixed.ui.components;
 
 import java.awt.BorderLayout;
 
+import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+import javax.swing.border.BevelBorder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.comixed.adaptors.StatusAdaptor;
+import org.comixed.adaptors.StatusListener;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>MainClientPanel</code> manages the main portion of the application's
- * window.
- * 
+ * <code>StatusBar</code> shows ongoing status of the application subsystems.
+ *
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class MainClientPanel extends JPanel implements
-                             InitializingBean
+public class StatusBar extends JPanel implements
+                       InitializingBean,
+                       StatusListener
 {
-    private static final long serialVersionUID = -6194561704845594236L;
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final long serialVersionUID = 228129338982896691L;
+
+    private JLabel statusText = new JLabel();
 
     @Autowired
-    private ComicTableView tableView;
+    private StatusAdaptor statusAdaptor;
 
-    public MainClientPanel()
+    public StatusBar()
     {
-        super(new BorderLayout(), true);
+        super();
+        this.setBorder(new BevelBorder(BevelBorder.LOWERED));
+        this.add(this.statusText, BorderLayout.CENTER);
+        this.statusText.setHorizontalAlignment(JLabel.LEFT);
     }
 
     @Override
     public void afterPropertiesSet() throws Exception
     {
-        logger.debug("Setting up table view");
-        this.add(new JScrollPane(tableView), BorderLayout.CENTER);
+        this.statusAdaptor.addStatusListener(this);
+    }
+
+    @Override
+    public void statusTextChanged(String message)
+    {
+        this.statusText.setText(message);
     }
 }
