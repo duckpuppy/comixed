@@ -17,7 +17,7 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed.library.adaptors;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,22 +31,22 @@ import com.github.junrar.impl.FileVolumeManager;
 import com.github.junrar.rarfile.FileHeader;
 
 /**
- * <code>RarArchiveLoader</code> provides a concrete implementation of
- * {@link ArchiveLoader} for RAR files.
+ * <code>RarArchiveAdaptor</code> provides a concrete implementation of
+ * {@link ArchiveAdaptor} for RAR files.
  * 
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class RarArchiveLoader extends AbstractArchiveLoader
+public class RarArchiveAdaptor extends AbstractArchiveAdaptor
 {
-    public RarArchiveLoader()
+    public RarArchiveAdaptor()
     {
         super("cbr");
     }
 
     @Override
-    protected byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveLoaderException
+    protected byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveAdaptorException
     {
         File file = validateFile(comic);
         byte[] result = null;
@@ -59,7 +59,7 @@ public class RarArchiveLoader extends AbstractArchiveLoader
             if (entry == null)
             {
                 archive.close();
-                throw new ArchiveLoaderException("Invalid or corrupt RAR file: " + file.getName());
+                throw new ArchiveAdaptorException("Invalid or corrupt RAR file: " + file.getName());
             }
 
             while (entry != null)
@@ -92,15 +92,15 @@ public class RarArchiveLoader extends AbstractArchiveLoader
         catch (RarException
                | IOException error)
         {
-            throw new ArchiveLoaderException("unable to open file: " + file.getAbsolutePath(), error);
+            throw new ArchiveAdaptorException("unable to open file: " + file.getAbsolutePath(), error);
         }
         return result;
     }
 
     @Override
-    void saveComicInternal(Comic source, String filename) throws ArchiveLoaderException
+    void saveComicInternal(Comic source, String filename, boolean renamePages) throws ArchiveAdaptorException
     {
         logger.warn("Saving RAR comics is not supported");
-        throw new ArchiveLoaderException("Saving CBR comics is not supported");
+        throw new ArchiveAdaptorException("Saving CBR comics is not supported");
     }
 }

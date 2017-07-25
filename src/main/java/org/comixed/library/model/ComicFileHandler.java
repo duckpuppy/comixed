@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.comixed.library.loaders.ArchiveLoader;
-import org.comixed.library.loaders.ArchiveLoaderException;
+import org.comixed.library.adaptors.ArchiveAdaptor;
+import org.comixed.library.adaptors.ArchiveAdaptorException;
 import org.comixed.library.utils.FileTypeIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,6 +50,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @EnableConfigurationProperties
+@PropertySource("classpath:archiveadaptors.properties")
 @ConfigurationProperties(prefix = "comic.archive",
                          ignoreUnknownFields = false)
 public class ComicFileHandler implements
@@ -62,12 +64,12 @@ public class ComicFileHandler implements
     private FileTypeIdentifier fileTypeIdentifier;
     @Autowired
     private Map<String,
-                ArchiveLoader> archiveLoaders;
-    private List<ArchiveLoaderEntry> loaders = new ArrayList<>();
+                ArchiveAdaptor> archiveAdaptors;
+    private List<ArchiveAdaptorEntry> adaptors = new ArrayList<>();
     private Map<String,
                 ArchiveType> archiveTypes = new HashMap<>();
 
-    public static class ArchiveLoaderEntry
+    public static class ArchiveAdaptorEntry
     {
         private String format;
         private String bean;
@@ -95,9 +97,9 @@ public class ComicFileHandler implements
         }
     }
 
-    public List<ArchiveLoaderEntry> getLoaders()
+    public List<ArchiveAdaptorEntry> getAdaptors()
     {
-        return loaders;
+        return adaptors;
     }
 
     /**
@@ -126,18 +128,18 @@ public class ComicFileHandler implements
 
         if (archiveType == null) { throw new ComicFileHandlerException("Unknown comic type"); }
 
-        ArchiveLoader archiveLoader = archiveLoaders.get(archiveType);
+        ArchiveAdaptor archiveAdaptor = archiveAdaptors.get(archiveType);
 
-        if (archiveLoader == null) { throw new ComicFileHandlerException("No archive loader defined for type: "
-                                                                         + archiveType); }
+        if (archiveAdaptor == null) { throw new ComicFileHandlerException("No archive loader defined for type: "
+                                                                          + archiveType); }
 
         comic.setArchiveType(this.archiveTypes.get(archiveType));
 
         try
         {
-            archiveLoader.loadComic(comic);
+            archiveAdaptor.loadComic(comic);
         }
-        catch (ArchiveLoaderException error)
+        catch (ArchiveAdaptorException error)
         {
             throw new ComicFileHandlerException("Unable to load comic", error);
         }
@@ -147,23 +149,23 @@ public class ComicFileHandler implements
     public void afterPropertiesSet() throws Exception
     {
         logger.debug("Initializing ComicFileHandler");
-        archiveLoaders.clear();
+        archiveAdaptors.clear();
         archiveTypes.clear();
-        for (ArchiveLoaderEntry loader : this.loaders)
+        for (ArchiveAdaptorEntry loader : this.adaptors)
         {
             if (loader.isValid())
             {
-                ArchiveLoader bean = (ArchiveLoader )context.getBean(loader.bean);
+                ArchiveAdaptor bean = (ArchiveAdaptor )context.getBean(loader.bean);
 
                 if (context.containsBean(loader.bean))
                 {
                     logger.debug("Adding new archive loader: format=" + loader.format + " bean=" + loader.bean);
-                    this.archiveLoaders.put(loader.format, bean);
+                    this.archiveAdaptors.put(loader.format, bean);
                     logger.debug("Associating archive type with format: format=" + loader.format + " archive type="
                                  + loader.archiveType);
                     this.archiveTypes.put(loader.format, loader.archiveType);
                     logger.debug("Registering loader with archive type: " + loader.archiveType);
-                    loader.archiveType.setArchiveLoader(bean);
+                    loader.archiveType.setArchiveAdaptor(bean);
                 }
                 else
                 {

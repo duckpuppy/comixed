@@ -17,7 +17,7 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed.library.adaptors;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,21 +34,21 @@ import org.comixed.library.model.Page;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>ZipArchiveLoader</code> provides a concrete implementation of
- * {@link ArchiveLoader} for ZIP files.
+ * <code>ZipArchiveAdaptor</code> provides a concrete implementation of
+ * {@link ArchiveAdaptor} for ZIP files.
  *
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class ZipArchiveLoader extends AbstractArchiveLoader
+public class ZipArchiveAdaptor extends AbstractArchiveAdaptor
 {
-    public ZipArchiveLoader()
+    public ZipArchiveAdaptor()
     {
         super("cbz");
     }
 
-    protected byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveLoaderException
+    protected byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveAdaptorException
     {
         File file = validateFile(comic);
 
@@ -91,11 +91,12 @@ public class ZipArchiveLoader extends AbstractArchiveLoader
         }
         catch (IOException error)
         {
-            throw new ArchiveLoaderException("unable to open file: " + file.getAbsolutePath(), error);
+            throw new ArchiveAdaptorException("unable to open file: " + file.getAbsolutePath(), error);
         }
     }
 
-    void saveComicInternal(Comic source, String filename) throws ArchiveLoaderException
+    @Override
+    void saveComicInternal(Comic source, String filename, boolean renamePages) throws ArchiveAdaptorException
     {
         logger.debug("Creating temporary file: " + filename);
 
@@ -112,8 +113,9 @@ public class ZipArchiveLoader extends AbstractArchiveLoader
             {
                 // TODO if the page is deleted, then skip it
                 Page page = source.getPage(index);
-                logger.debug("Adding entry: " + page.getFilename() + " size=" + page.getContent().length);
-                ZipArchiveEntry entry = new ZipArchiveEntry(page.getFilename());
+                String pagename = renamePages ? getFilenameForEntry(page.getFilename(), index) : page.getFilename();
+                logger.debug("Adding entry: " + pagename + " size=" + page.getContent().length);
+                ZipArchiveEntry entry = new ZipArchiveEntry(pagename);
                 entry.setSize(page.getContent().length);
                 zoutput.putArchiveEntry(entry);
                 zoutput.write(page.getContent());
@@ -126,7 +128,7 @@ public class ZipArchiveLoader extends AbstractArchiveLoader
         catch (IOException
                | ArchiveException error)
         {
-            throw new ArchiveLoaderException("error creating comic archive", error);
+            throw new ArchiveAdaptorException("error creating comic archive", error);
         }
     }
 }

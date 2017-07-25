@@ -17,7 +17,7 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed.library.adaptors;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -32,6 +32,8 @@ import java.util.Map;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.utils.IOUtils;
 import org.codehaus.plexus.util.FileUtils;
+import org.comixed.library.loaders.EntryLoader;
+import org.comixed.library.loaders.EntryLoaderException;
 import org.comixed.library.model.Comic;
 import org.comixed.library.model.ComicFileHandler;
 import org.comixed.library.model.ComicFileHandlerException;
@@ -46,8 +48,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>AbstractArchiveLoader</code> provides a foundation for creating new
- * instances of {@link ArchiveLoader}.
+ * <code>AbstractArchiveAdaptor</code> provides a foundation for creating new
+ * instances of {@link ArchiveAdaptor}.
  *
  * @author Darryl L. Pierce
  *
@@ -56,9 +58,9 @@ import org.springframework.stereotype.Component;
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "comic.entry",
                          ignoreUnknownFields = false)
-public abstract class AbstractArchiveLoader implements
-                                            ArchiveLoader,
-                                            InitializingBean
+public abstract class AbstractArchiveAdaptor implements
+                                             ArchiveAdaptor,
+                                             InitializingBean
 {
     public static class EntryLoaderForType
     {
@@ -98,7 +100,7 @@ public abstract class AbstractArchiveLoader implements
                   EntryLoader> entryLoaders = new HashMap<>();
     private String defaultExtension;
 
-    public AbstractArchiveLoader(String defaultExtension)
+    public AbstractArchiveAdaptor(String defaultExtension)
     {
         super();
         this.defaultExtension = defaultExtension;
@@ -153,6 +155,11 @@ public abstract class AbstractArchiveLoader implements
         return (!file.exists()) ? candidate : this.findAvailableFilename(filename, ++attempt);
     }
 
+    protected String getFilenameForEntry(String filename, int index)
+    {
+        return String.format("page-%03d.%s", index, FileUtils.getExtension(filename));
+    }
+
     protected EntryLoader getLoaderForContent(byte[] content)
     {
         String type = this.fileTypeIdentifier.typeFor(new ByteArrayInputStream(content));
@@ -168,7 +175,7 @@ public abstract class AbstractArchiveLoader implements
     }
 
     @Override
-    public void loadComic(Comic comic) throws ArchiveLoaderException
+    public void loadComic(Comic comic) throws ArchiveAdaptorException
     {
         this.logger.debug("Opening archive: " + comic.getFilename());
 
@@ -186,10 +193,10 @@ public abstract class AbstractArchiveLoader implements
      * @param entryName
      *            the entry name
      * @return
-     * @throws ArchiveLoaderException
+     * @throws ArchiveAdaptorException
      *             if an error occurs
      */
-    protected abstract byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveLoaderException;
+    protected abstract byte[] loadComicInternal(Comic comic, String entryName) throws ArchiveAdaptorException;
 
     protected byte[] loadContent(String filename, long size, InputStream input) throws IOException
     {
@@ -202,7 +209,7 @@ public abstract class AbstractArchiveLoader implements
     }
 
     @Override
-    public byte[] loadSingleFile(Comic comic, String entryName) throws ArchiveLoaderException
+    public byte[] loadSingleFile(Comic comic, String entryName) throws ArchiveAdaptorException
     {
         this.logger.debug("Loading single entry from archive: filename=" + comic.getFilename() + " entry=" + entryName);
         return this.loadComicInternal(comic, entryName);
@@ -230,7 +237,7 @@ public abstract class AbstractArchiveLoader implements
     }
 
     @Override
-    public Comic saveComic(Comic source) throws ArchiveLoaderException
+    public Comic saveComic(Comic source, boolean renamePages) throws ArchiveAdaptorException
     {
         this.logger.debug("Saving comic: " + source.getFilename());
 
@@ -241,10 +248,10 @@ public abstract class AbstractArchiveLoader implements
         }
         catch (IOException error)
         {
-            throw new ArchiveLoaderException("unable to write comic", error);
+            throw new ArchiveAdaptorException("unable to write comic", error);
         }
 
-        this.saveComicInternal(source, tempFilename);
+        this.saveComicInternal(source, tempFilename, renamePages);
 
         String filename = this.findAvailableFilename(source.getBaseFilename(), 0);
         File file1 = new File(tempFilename);
@@ -256,7 +263,7 @@ public abstract class AbstractArchiveLoader implements
         }
         catch (IOException error)
         {
-            throw new ArchiveLoaderException("Unable to copy file", error);
+            throw new ArchiveAdaptorException("Unable to copy file", error);
         }
 
         Comic result = new Comic();
@@ -265,11 +272,11 @@ public abstract class AbstractArchiveLoader implements
 
         try
         {
-            comicFileHandler.loadComic(result);
+            this.comicFileHandler.loadComic(result);
         }
         catch (ComicFileHandlerException error)
         {
-            throw new ArchiveLoaderException("Error loading new comic", error);
+            throw new ArchiveAdaptorException("Error loading new comic", error);
         }
 
         return result;
@@ -282,17 +289,19 @@ public abstract class AbstractArchiveLoader implements
      *            the source comic
      * @param filename
      *            the new filename
+     * @param renamePages
+     *            rename pages
      * @throws ArchiveException
      *             if an error occurs
      */
-    abstract void saveComicInternal(Comic source, String filename) throws ArchiveLoaderException;
+    abstract void saveComicInternal(Comic source, String filename, boolean renamePages) throws ArchiveAdaptorException;
 
-    protected File validateFile(Comic comic) throws ArchiveLoaderException
+    protected File validateFile(Comic comic) throws ArchiveAdaptorException
     {
         File file = new File(comic.getFilename());
 
-        if (!file.exists()) throw new ArchiveLoaderException("File not found: " + file.getAbsolutePath());
-        if (file.isDirectory()) throw new ArchiveLoaderException("Cannot open directory: " + file.getAbsolutePath());
+        if (!file.exists()) throw new ArchiveAdaptorException("File not found: " + file.getAbsolutePath());
+        if (file.isDirectory()) throw new ArchiveAdaptorException("Cannot open directory: " + file.getAbsolutePath());
 
         return file;
     }

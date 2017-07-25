@@ -23,7 +23,7 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 
-import org.comixed.library.loaders.ZipArchiveLoader;
+import org.comixed.library.adaptors.AbstractArchiveAdaptor;
 import org.comixed.library.model.ComicSelectionListener;
 import org.comixed.library.model.ComicSelectionModel;
 import org.comixed.tasks.ExportComicWorkerTask;
@@ -45,7 +45,7 @@ public class EditExportZipAction extends AbstractAction implements
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private ZipArchiveLoader archiveLoader;
+    private AbstractArchiveAdaptor archiveAdaptor;
 
     @Autowired
     private ComicTableView tableView;
@@ -71,7 +71,7 @@ public class EditExportZipAction extends AbstractAction implements
             ExportComicWorkerTask task = taskFactory.getObject();
 
             task.setComics(this.selectionModel.getComic(selection));
-            task.setArchiveLoader(this.archiveLoader);
+            task.setArchiveAdaptor(this.archiveAdaptor);
 
             this.worker.addTasksToQueue(task);
         }

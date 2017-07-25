@@ -21,9 +21,9 @@ package org.comixed.tasks;
 
 import java.util.Locale;
 
-import org.comixed.library.loaders.ArchiveLoader;
-import org.comixed.library.loaders.ArchiveLoaderException;
-import org.comixed.library.loaders.ZipArchiveLoader;
+import org.comixed.library.adaptors.AbstractArchiveAdaptor;
+import org.comixed.library.adaptors.ArchiveAdaptor;
+import org.comixed.library.adaptors.ArchiveAdaptorException;
 import org.comixed.library.model.Comic;
 import org.comixed.library.model.ComicSelectionModel;
 import org.comixed.repositories.ComicRepository;
@@ -40,7 +40,7 @@ public class ExportComicWorkerTask extends AbstractWorkerTask
 {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private Comic comic;
-    private ArchiveLoader archiveLoader;
+    private ArchiveAdaptor archiveAdaptor;
 
     @Autowired
     private MessageSource messageSource;
@@ -51,9 +51,9 @@ public class ExportComicWorkerTask extends AbstractWorkerTask
     @Autowired
     private ComicSelectionModel comicSelectionModel;
 
-    public void setArchiveLoader(ZipArchiveLoader archiveLoader)
+    public void setArchiveAdaptor(AbstractArchiveAdaptor archiveAdaptor)
     {
-        this.archiveLoader = archiveLoader;
+        this.archiveAdaptor = archiveAdaptor;
     }
 
     public void setComics(Comic comic)
@@ -70,11 +70,11 @@ public class ExportComicWorkerTask extends AbstractWorkerTask
         {
             this.showStatusText(this.messageSource.getMessage("status.comic.exported", new Object[]
             {this.comic.getFilename()}, Locale.getDefault()));
-            Comic result = this.archiveLoader.saveComic(this.comic);
+            Comic result = this.archiveAdaptor.saveComic(this.comic, false);
             comicRepository.save(result);
             comicSelectionModel.reload();
         }
-        catch (ArchiveLoaderException error)
+        catch (ArchiveAdaptorException error)
         {
             throw new WorkerTaskException("Unable to convert comic", error);
         }

@@ -17,28 +17,28 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed.library.adaptors;
 
 import org.comixed.library.model.Comic;
 
 /**
- * <code>ArchiveLoader</code> defines a type which handles loading from and
+ * <code>ArchiveAdaptor</code> defines a type which handles loading from and
  * saving to an archive file.
  *
  * @author Darryl L. Pierce
  *
  */
-public interface ArchiveLoader
+public interface ArchiveAdaptor
 {
     /**
      * Loads the entire comic's contents from disk.
      *
      * @param comic
      *            the comic
-     * @throws ArchiveLoaderException
+     * @throws ArchiveAdaptorException
      *             if an error occurs
      */
-    void loadComic(Comic comic) throws ArchiveLoaderException;
+    void loadComic(Comic comic) throws ArchiveAdaptorException;
 
     /**
      * Loads a single file from the archive file.
@@ -48,26 +48,28 @@ public interface ArchiveLoader
      * @param entryName
      *            the entry name
      * @return the content of the entry
-     * @throws ArchiveLoaderException
+     * @throws ArchiveAdaptorException
      *             if an error occurs
      */
-    byte[] loadSingleFile(Comic comic, String entryName) throws ArchiveLoaderException;
+    byte[] loadSingleFile(Comic comic, String entryName) throws ArchiveAdaptorException;
 
     /**
      * Saves the comic.
      *
      * The new comic will have the same base filename and directory as the
      * source, but the extension will comic be determined by the instance of
-     * {@link ArchiveLoader}.
+     * {@link ArchiveAdaptor}.
      *
      * If a comic already exists with the filename, it is replaced by the new
      * comic.
      *
      * @param comic
      *            the comic
+     * @param renamePages
+     *            true rename pages
      * @return the new comic
-     * @throws ArchiveLoaderException
+     * @throws ArchiveAdaptorException
      *             if an error occurs
      */
-    Comic saveComic(Comic comic) throws ArchiveLoaderException;
+    Comic saveComic(Comic comic, boolean renamePages) throws ArchiveAdaptorException;
 }
