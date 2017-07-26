@@ -38,14 +38,14 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>FileAddAction</code> lets the user select a single comic file to add to
+ * <code>AddComicAction</code> lets the user select a single comic file to add to
  * the library.
  * 
  * @author Darryl L. Pierce
  *
  */
 @Component
-public class FileAddAction extends AbstractAction
+public class AddComicAction extends AbstractAction
 {
     private static final long serialVersionUID = -3668945997213296168L;
     private static final String LAST_ADD_DIRECTORY = "file.add.last-directory";
