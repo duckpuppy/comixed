@@ -17,7 +17,7 @@
  * org.comixed;
  */
 
-package org.comixed.ui;
+package org.comixed.ui.menus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,12 +26,14 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
-import org.comixed.ui.menus.MenuHelper;
+import org.comixed.ui.menus.MenuHelper.Menu;
+import org.comixed.ui.menus.MenuHelper.MenuType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -48,35 +50,16 @@ import org.springframework.stereotype.Component;
 public class MainMenuBar extends JMenuBar implements
                          InitializingBean
 {
-    public static class Menu
-    {
-        String menu;
-        String label;
-        String bean;
-
-        public void setBean(String bean)
-        {
-            this.bean = bean;
-        }
-
-        public void setLabel(String label)
-        {
-            this.label = label;
-        }
-
-        public void setMenu(String menu)
-        {
-            this.menu = menu;
-        }
-    }
-
     private static final long serialVersionUID = -3549352202994937250L;
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private List<Menu> mainMenu = new ArrayList<>();
 
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     @Autowired
     private MenuHelper menuHelper;
+
+    @Autowired
+    private ApplicationContext context;
 
     @Override
     public void afterPropertiesSet() throws Exception
@@ -92,6 +75,7 @@ public class MainMenuBar extends JMenuBar implements
             {
                 continue;
             }
+
             // create the menu if necessary
             if ((lastItem == null) || !lastItem.menu.equals(item.menu))
             {
@@ -100,13 +84,25 @@ public class MainMenuBar extends JMenuBar implements
                 this.menuHelper.configureMenuItem(menu, item.menu);
                 this.add(menu);
             }
-            // create and add the menu item
-            this.logger.debug("Creating menu item: " + item.menu + "->" + item.label);
-            if (item.label.equals("---"))
+
+            if (item.type == MenuType.SEPARATOR)
             {
+                this.logger.debug("Creating menu item: " + item.menu + "->" + item.label);
                 menu.addSeparator();
             }
-            else
+            else if (item.type == MenuType.SUBMENU)
+            {
+                this.logger.debug("Creating submenu item: " + item.menu + "->" + item.label);
+                if (this.context.containsBean(item.bean))
+                {
+                    menu.add((JMenu )this.context.getBean(item.bean));
+                }
+                else
+                {
+                    this.logger.warn("No such bean: " + item.bean);
+                }
+            }
+            else if (item.type == MenuType.ITEM)
             {
                 JMenuItem menuItem = this.menuHelper.createMenuItem(item.menu + "." + item.label, item.bean);
                 if (menuItem != null)
