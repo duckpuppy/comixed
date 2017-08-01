@@ -17,12 +17,16 @@
  * org.comixed;
  */
 
-package org.comixed.library.loaders;
+package org.comixed.library.adaptors;
 
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 
+import org.comixed.library.loaders.BaseLoaderTest;
+import org.comixed.library.loaders.EntryLoaderException;
 import org.comixed.library.model.Comic;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,14 +35,14 @@ import org.mockito.InjectMocks;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ComicInfoEntryLoaderTest extends BaseLoaderTest
+public class ComicInfoEntryAdaptorTest extends BaseLoaderTest
 {
     private static final String TEST_COMICINFO_FILE_COMPLETE = "src/test/resources/ComicInfo-complete.xml";
     private static final String TEST_PUBLISHER_NAME = "Test Publisher";
     private static final String TEST_SERIES_NAME = "Test Series";
     private static final String TEST_VOLUME_NAME = "2011";
     @InjectMocks
-    ComicInfoEntryLoader loader;
+    ComicInfoEntryAdaptor adaptor;
 
     private Comic comic;
 
@@ -46,12 +50,19 @@ public class ComicInfoEntryLoaderTest extends BaseLoaderTest
     public void setUp()
     {
         comic = new Comic();
+
+        comic.setPublisher(TEST_PUBLISHER_NAME);
+        comic.setSeries(TEST_SERIES_NAME);
+        comic.setVolume(TEST_VOLUME_NAME);
+        comic.setCoverDate(new Date());
+        comic.setDateLastRead(new Date());
+        comic.setDateAdded(new Date());
     }
 
     @Test
     public void testLoadComicInfoXml() throws IOException, EntryLoaderException
     {
-        loader.loadContent(comic, TEST_COMICINFO_FILE_COMPLETE, loadFile(TEST_COMICINFO_FILE_COMPLETE));
+        adaptor.loadContent(comic, TEST_COMICINFO_FILE_COMPLETE, loadFile(TEST_COMICINFO_FILE_COMPLETE));
 
         assertEquals(TEST_PUBLISHER_NAME, comic.getPublisher());
         assertEquals(TEST_SERIES_NAME, comic.getSeries());
@@ -60,7 +71,33 @@ public class ComicInfoEntryLoaderTest extends BaseLoaderTest
         assertEquals("24", comic.getIssueNumber());
         assertEquals("Test summary", comic.getSummary());
         assertEquals("Test notes", comic.getNotes());
-        assertEquals(2013, comic.getCoverDate().getYear());
-        assertEquals(11, comic.getCoverDate().getMonth());
+
+        Calendar gc = Calendar.getInstance();
+        gc.setTime(comic.getCoverDate());
+        assertEquals(2013, gc.get(Calendar.YEAR));
+        assertEquals(11, gc.get(Calendar.MONTH));
+    }
+
+    @Test
+    public void testSaveComicInfoXml() throws EntryLoaderException, IOException
+    {
+        adaptor.loadContent(comic, TEST_COMICINFO_FILE_COMPLETE, loadFile(TEST_COMICINFO_FILE_COMPLETE));
+
+        byte[] result = adaptor.saveContent(comic);
+
+        Comic second = new Comic();
+        adaptor.loadContent(second, TEST_COMICINFO_FILE_COMPLETE, result);
+
+        assertEquals(comic.getPublisher(), second.getPublisher());
+        assertEquals(comic.getSeries(), second.getSeries());
+        assertEquals(comic.getVolume(), second.getVolume());
+        assertEquals(comic.getIssueNumber(), second.getIssueNumber());
+        assertEquals(comic.getTitle(), second.getTitle());
+        assertEquals(comic.getSummary(), second.getSummary());
+        assertEquals(comic.getNotes(), second.getNotes());
+        assertEquals(comic.getCoverDate(), second.getCoverDate());
+        assertEquals(comic.getCharacters(), second.getCharacters());
+        assertEquals(comic.getTeams(), second.getTeams());
+        assertEquals(comic.getLocations(), second.getLocations());
     }
 }
