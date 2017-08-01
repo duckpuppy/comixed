@@ -31,6 +31,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.swing.ImageIcon;
@@ -47,6 +49,11 @@ import org.slf4j.LoggerFactory;
  */
 @Entity
 @Table(name = "pages")
+@NamedQueries(
+{@NamedQuery(name = "Page.getDuplicatePageList",
+             query = "SELECT p FROM Page p WHERE p.hash IN (SELECT d.hash FROM Page d GROUP BY d.hash HAVING COUNT(*) > 1)"),
+ @NamedQuery(name = "Page.getDuplicatePageCount",
+             query = "SELECT COUNT(p) FROM Page p WHERE p.hash IN (SELECT d.hash FROM Page d GROUP BY d.hash HAVING COUNT(*) > 1)"),})
 public class Page
 {
     @Transient
@@ -69,6 +76,11 @@ public class Page
             updatable = true,
             nullable = false)
     private String hash;
+
+    @Column(name = "deleted",
+            updatable = true,
+            nullable = false)
+    private boolean deleted = false;
 
     @Transient
     private byte[] content;
@@ -198,7 +210,7 @@ public class Page
         if (this.icon == null)
         {
             this.logger.debug("Generating image from content");
-            this.icon = new ImageIcon(this.content);
+            this.icon = new ImageIcon(this.getContent());
         }
         return this.icon;
     }
@@ -232,10 +244,10 @@ public class Page
     {
         this.logger.debug("Getting scaled page image: width=" + width);
         ImageIcon image = this.getImage();
-        float w = (float )image.getIconWidth();
-        float h = (float )image.getIconHeight();
+        float w = image.getIconWidth();
+        float h = image.getIconHeight();
 
-        int height = (int )(((h / w) * ((float )width)));
+        int height = (int )(((h / w) * (width)));
 
         this.logger.debug("Returning image scaled to " + width + "x" + height);
 
@@ -250,6 +262,28 @@ public class Page
         result = (prime * result) + ((this.filename == null) ? 0 : this.filename.hashCode());
         result = (prime * result) + ((this.hash == null) ? 0 : this.hash.hashCode());
         return result;
+    }
+
+    /**
+     * Returns if the page is marked for deletion.
+     *
+     * @return true if marked for deletion
+     */
+    public boolean isMarkedDeleted()
+    {
+        return this.deleted;
+    }
+
+    /**
+     * Sets the deleted flag for the page.
+     *
+     * @param deleted
+     *            true if the page is to be deleted
+     */
+    public void markDeleted(boolean deleted)
+    {
+        this.logger.debug("Mark deletion: " + deleted);
+        this.deleted = deleted;
     }
 
     void setComic(Comic comic)
