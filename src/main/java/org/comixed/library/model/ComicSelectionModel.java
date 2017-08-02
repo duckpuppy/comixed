@@ -55,7 +55,7 @@ public class ComicSelectionModel implements
     @Autowired
     private PageRepository pageRepository;
 
-    List<Comic> selected = new ArrayList<>();
+    List<Comic> allComics = new ArrayList<>();
     boolean reload = true;
     List<ComicSelectionListener> listeners = new ArrayList<>();
     List<Comic> selections = new ArrayList<>();
@@ -89,6 +89,17 @@ public class ComicSelectionModel implements
     }
 
     /**
+     * Returns all loaded comics.
+     *
+     * @return all comics
+     */
+    public List<Comic> getAllComics()
+    {
+        this.logger.debug("Returning all comics");
+        return this.allComics;
+    }
+
+    /**
      * Returns the comic at the specified index.
      *
      * @param index
@@ -102,8 +113,8 @@ public class ComicSelectionModel implements
             this.reloadComics();
         }
 
-        this.logger.debug("Return selected comic: index=" + index);
-        return this.selected.get(index);
+        this.logger.debug("Return allComics comic: index=" + index);
+        return this.allComics.get(index);
     }
 
     /**
@@ -117,7 +128,7 @@ public class ComicSelectionModel implements
         {
             this.reloadComics();
         }
-        int result = (this.selected != null) ? this.selected.size() : 0;
+        int result = (this.allComics != null) ? this.allComics.size() : 0;
         this.logger.debug("Return comic count: " + result);
         return result;
     }
@@ -126,6 +137,17 @@ public class ComicSelectionModel implements
     {
         this.logger.debug("Returning duplicate page count");
         return this.pageRepository.getDuplicatePageCount();
+    }
+
+    /**
+     * Returns only those comics that are allComics.
+     *
+     * @return the allComics comics
+     */
+    public List<Comic> getSelectedComics()
+    {
+        this.logger.debug("Returning allComics comics");
+        return this.selections;
     }
 
     public long getTotalComics()
@@ -151,8 +173,8 @@ public class ComicSelectionModel implements
     {
         this.logger.debug("Fetching comics");
         Iterable<Comic> selection = this.comicRepository.findAll();
-        this.selected.clear();
-        selection.forEach(this.selected::add);
+        this.allComics.clear();
+        selection.forEach(this.allComics::add);
         this.reload = false;
         this.fireSelectionChangedEvent();
     }
