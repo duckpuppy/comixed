@@ -20,10 +20,15 @@
 package org.comixed.library.model;
 
 import java.awt.Image;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.WeakHashMap;
 
+import javax.imageio.ImageIO;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -35,7 +40,6 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import javax.swing.ImageIcon;
 
 import org.comixed.library.adaptors.ArchiveAdaptorException;
 import org.slf4j.Logger;
@@ -56,6 +60,11 @@ import org.slf4j.LoggerFactory;
              query = "SELECT COUNT(p) FROM Page p WHERE p.hash IN (SELECT d.hash FROM Page d GROUP BY d.hash HAVING COUNT(*) > 1)"),})
 public class Page
 {
+    public static String createImageCacheKey(int width, int height)
+    {
+        return String.valueOf(width) + "x" + String.valueOf(height);
+    }
+
     @Transient
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -86,7 +95,11 @@ public class Page
     private byte[] content;
 
     @Transient
-    private ImageIcon icon;
+    private Image icon;
+
+    @Transient
+    protected Map<String,
+                  Image> imageCache = new WeakHashMap<>();
 
     /**
      * Default constructor.
@@ -108,25 +121,6 @@ public class Page
         this.filename = filename;
         this.content = content;
         this.hash = this.createHash(content);
-    }
-
-    private String createHash(byte[] bytes)
-    {
-        this.logger.debug("Generating MD5 hash");
-        String result = "";
-        MessageDigest md;
-        try
-        {
-            md = MessageDigest.getInstance("MD5");
-            md.update(bytes);
-            result = new BigInteger(1, md.digest()).toString(16).toUpperCase();
-        }
-        catch (NoSuchAlgorithmException error)
-        {
-            this.logger.error("Failed to generate hash", error);
-        }
-        this.logger.debug("Returning: " + result);
-        return result;
     }
 
     @Override
@@ -205,53 +199,78 @@ public class Page
      *
      * @return the image
      */
-    public ImageIcon getImage()
+    public Image getImage()
     {
         if (this.icon == null)
         {
             this.logger.debug("Generating image from content");
-            this.icon = new ImageIcon(this.getContent());
+            try
+            {
+                this.icon = ImageIO.read(new ByteArrayInputStream(this.getContent()));
+            }
+            catch (IOException error)
+            {
+                this.logger.error("Failed to load image from " + this.comic.getFilename(), error);
+            }
         }
         return this.icon;
     }
 
     /**
-     * Returns the image, resized so that the width is the specified width.
-     *
-     * @param width
-     *            the maximum width
-     * @return the resized image
-     */
-    public ImageIcon getImage(int width)
-    {
-        ImageIcon image = this.getImage();
-        int oldWidth = image.getIconWidth();
-        int oldHeight = image.getIconHeight();
-        int height = (int )(((float )width / (float )oldWidth) * oldHeight);
-        this.logger.debug("Fetching resized image: " + width + "x" + height);
-
-        return new ImageIcon(this.icon.getImage().getScaledInstance(width, height, Image.SCALE_FAST));
-    }
-
-    /**
      * Returns a scaled copy of the page image.
      *
-     * @param width
-     *            the scaled width
+     * @param maxWidth
+     *            the maximum scaled width
+     * @param maxHeight
+     *            the maximum scaled height
      * @return the scaled image
      */
-    public Image getScaledImage(int width)
+    public Image getImage(int maxWidth, int maxHeight)
     {
-        this.logger.debug("Getting scaled page image: width=" + width);
-        ImageIcon image = this.getImage();
-        float w = image.getIconWidth();
-        float h = image.getIconHeight();
+        this.logger.debug("Scaling page: maxWidth=" + maxWidth + ", maxHeight=" + maxHeight);
+        Image image = this.getImage();
 
-        int height = (int )(((h / w) * (width)));
+        int boundWidth = maxWidth;
+        int boundHeight = maxHeight;
+        int oldWidth = image.getWidth(null);
+        int oldHeight = image.getHeight(null);
 
-        this.logger.debug("Returning image scaled to " + width + "x" + height);
+        this.logger.debug("oldWidth=" + oldWidth);
+        this.logger.debug("oldHeight=" + oldHeight);
 
-        return image.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        if ((boundWidth < 1) && (boundHeight < 1))
+        {
+            this.logger.debug("If both maxWidth and maxHeight are less than 1, then consider using getImage()");
+            boundWidth = oldWidth;
+            boundHeight = oldHeight;
+        }
+        else if (boundWidth < 1)
+        {
+            boundWidth = (int )(((float )oldWidth * (float )boundHeight) / oldHeight);
+        }
+        else if (boundHeight < 1)
+        {
+            boundHeight = (int )(((float )oldHeight * (float )boundWidth) / oldWidth);
+        }
+
+        Image result = null;
+        String key = Page.createImageCacheKey(boundWidth, boundHeight);
+
+        if (this.imageCache.containsKey(key))
+        {
+            this.logger.debug("Found image in cache: (" + boundWidth + "x" + boundHeight + ")");
+            result = this.imageCache.get(key);
+        }
+        else
+        {
+            this.logger.debug("Scaling image: old=(" + oldWidth + "x" + oldHeight + ") new=(" + boundWidth + "x"
+                              + boundHeight + ")");
+            result = image.getScaledInstance(boundWidth, boundHeight, Image.SCALE_SMOOTH);
+            this.logger.debug("Placing scaled image into cache");
+            this.imageCache.put(key, result);
+        }
+
+        return result;
     }
 
     @Override
@@ -286,11 +305,6 @@ public class Page
         this.deleted = deleted;
     }
 
-    void setComic(Comic comic)
-    {
-        this.comic = comic;
-    }
-
     /**
      * Sets a new filename for the page.
      *
@@ -301,5 +315,29 @@ public class Page
     {
         this.logger.debug("Changing filename: " + this.filename + " -> " + filename);
         this.filename = filename;
+    }
+
+    private String createHash(byte[] bytes)
+    {
+        this.logger.debug("Generating MD5 hash");
+        String result = "";
+        MessageDigest md;
+        try
+        {
+            md = MessageDigest.getInstance("MD5");
+            md.update(bytes);
+            result = new BigInteger(1, md.digest()).toString(16).toUpperCase();
+        }
+        catch (NoSuchAlgorithmException error)
+        {
+            this.logger.error("Failed to generate hash", error);
+        }
+        this.logger.debug("Returning: " + result);
+        return result;
+    }
+
+    void setComic(Comic comic)
+    {
+        this.comic = comic;
     }
 }
