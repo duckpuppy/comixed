@@ -25,9 +25,11 @@ import java.util.List;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
 
 import org.comixed.library.model.ComicSelectionModel;
 import org.comixed.library.model.ComicTableModel;
+import org.comixed.library.model.Page;
 import org.comixed.ui.menus.MenuHelper;
 import org.comixed.ui.menus.MenuHelper.Menu;
 import org.comixed.ui.menus.MenuHelper.MenuType;
@@ -40,7 +42,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
- * <code>ComicTableView</code> provides a detailed view of the comics in the
+ * <code>ComicDetailsView</code> provides a detailed view of the comics in the
  * library.
  *
  * @author Darryl L. Pierce
@@ -48,23 +50,39 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @PropertySource("classpath:menus.properties")
-@ConfigurationProperties("app.table-view.popup")
-public class ComicTableView extends JTable implements
-                            InitializingBean
+@ConfigurationProperties("app.comic-details-view.popup")
+public class ComicDetailsView extends JTable implements
+                              InitializingBean
 {
     private static final long serialVersionUID = -4512908003749212065L;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private ComicTableModel comicTableModel;
-
     @Autowired
     private ComicSelectionModel comicSelectionModel;
-
     @Autowired
     private MenuHelper menuHelper;
+    @Autowired
+    private TableCellPageRenderer pageRenderer;
 
     private List<Menu> menu = new ArrayList<>();
+
+    @Override
+    public TableCellRenderer getCellRenderer(int row, int column)
+    {
+        Object obj = this.getValueAt(row, column);
+        Class<?> clazz = obj != null ? obj.getClass() : null;
+
+        if (clazz == Page.class)
+        {
+            return this.pageRenderer;
+        }
+        else
+        {
+            return super.getCellRenderer(row, column);
+        }
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception
