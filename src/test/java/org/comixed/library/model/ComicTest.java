@@ -26,8 +26,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,9 +49,9 @@ public class ComicTest
     private static final String TEST_TEAM = "Super test team";
     private static final String TEST_CHARACTER = "Test Man";
     private static final String TEST_LOCATION = "Test Location";
-    private static final String TEST_FILENAME = "C:/library/example.cbz";
+    private static final String TEST_FILENAME = "src/test/resources/example.cbz";
     private static final String TEST_NOTES = "Some sample notes";
-    private static final String TEST_BASE_FILENAME = "C:/library/example";
+    private static final String TEST_BASE_FILENAME = "src/test/resources/example";
     private Comic comic;
     private Page page = new Page();
 
@@ -426,9 +429,29 @@ public class ComicTest
     @Test
     public void testGetCover()
     {
+        this.comic.setFilename(TEST_FILENAME);
         this.comic.addPage(0, this.page);
         Page cover = this.comic.getCover();
         assertNotNull(cover);
         assertSame(this.comic.getPage(0), cover);
+    }
+
+    @Test
+    public void testIsMissing() throws IOException
+    {
+        Comic testComic = new Comic();
+
+        testComic.setFilename(System.getProperty("user.home") + File.separator + RandomStringUtils.randomAlphabetic(16)
+                              + ".cbz");
+        assertTrue(testComic.isMissing());
+    }
+
+    @Test
+    public void testMissingImage()
+    {
+        Comic testComic = new Comic();
+
+        Page cover = testComic.getCover();
+        assertSame(Page.MISSING_PAGE, cover);
     }
 }
