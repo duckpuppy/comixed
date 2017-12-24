@@ -1,7 +1,6 @@
 
 package org.comixed.ui.components;
 
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +9,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
 
-import org.comixed.library.model.Comic;
 import org.comixed.library.model.ComicSelectionModel;
 import org.comixed.library.model.ComicTableModel;
 import org.comixed.library.model.Page;
@@ -21,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -45,9 +42,6 @@ public class ComicDetailsTable extends JTable implements
     private MenuHelper menuHelper;
     @Autowired
     private TableCellPageRenderer pageRenderer;
-    @Autowired
-    private MessageSource messageSource;
-
     private List<Menu> menu = new ArrayList<>();
 
     @Override
@@ -97,24 +91,5 @@ public class ComicDetailsTable extends JTable implements
     public List<Menu> getMenu()
     {
         return this.menu;
-    }
-
-    @Override
-    public String getToolTipText(MouseEvent event)
-    {
-        int row = this.rowAtPoint(event.getPoint());
-        this.logger.info("Getting tooltip text: row=" + row);
-
-        if ((row >= 0) && (row < this.comicTableModel.getRowCount()))
-        {
-            Comic comic = this.comicTableModel.getComicAt(row);
-            return this.messageSource.getMessage("view.table.hover_text", new Object[]
-            {comic.getDescription(),
-             comic.getNotes(),
-             comic.getSummary(),
-             comic.getFilename()}, this.getLocale());
-
-        }
-        else return "No row selected";
     }
 }
