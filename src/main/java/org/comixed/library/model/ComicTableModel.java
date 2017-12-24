@@ -53,8 +53,6 @@ public class ComicTableModel extends DefaultTableModel implements
                              InitializingBean,
                              ComicSelectionListener
 {
-    private static final long serialVersionUID = -2124724909306232112L;
-
     /**
      * <code>ColumnDefinition</code> captures the details for a single column in
      * the details view.
@@ -88,6 +86,8 @@ public class ComicTableModel extends DefaultTableModel implements
         }
     }
 
+    private static final long serialVersionUID = -2124724909306232112L;
+
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
@@ -107,6 +107,7 @@ public class ComicTableModel extends DefaultTableModel implements
     public void comicListChanged()
     {
         this.fireTableDataChanged();
+        this.comicSelectionModel.fireListChangedEvent();
     }
 
     @Override
@@ -128,6 +129,20 @@ public class ComicTableModel extends DefaultTableModel implements
     public List<ColumnDefinition> getColumnNames()
     {
         return this.columnNames;
+    }
+
+    /**
+     * Returns the comic at the given index.
+     *
+     * @param index
+     *            the index
+     * @return the comic
+     */
+    public Comic getComicAt(int index)
+    {
+        if ((index < 0)
+            || (index > this.comicSelectionModel.getComicCount())) throw new IndexOutOfBoundsException("Invalid comic: index=" + index);
+        return this.comicSelectionModel.getComic(index);
     }
 
     @Override
@@ -162,10 +177,7 @@ public class ComicTableModel extends DefaultTableModel implements
                     throw new RuntimeException(error);
                 }
             }
-            else
-            {
-                throw new RuntimeException("invalid or unknown column: " + column);
-            }
+            else throw new RuntimeException("invalid or unknown column: " + column);
         }
 
         return null;
