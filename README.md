@@ -46,3 +46,4 @@ the [CONTRIBUTORS.md](./CONTRIBUTORS.md) file with your pull request.
 
 example.cbz - https://www.contrapositivediary.com/?p=1197
 missing_page.png - Original found at https://commons.wikimedia.org/wiki/File:Comic_image_missing.svg
+example.webp - https://cdn.online-convert.com/example-file/raster%20image/webp/example.webp
