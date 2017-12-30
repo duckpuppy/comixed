@@ -27,6 +27,7 @@ import java.util.Locale;
 
 import javax.swing.table.DefaultTableModel;
 
+import org.comixed.repositories.ComicRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -62,27 +63,53 @@ public class ComicTableModel extends DefaultTableModel implements
      */
     public static class ColumnDefinition
     {
-        private String name;
-        private String method;
+        protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-        public String getMethod()
-        {
-            return this.method;
-        }
+        private String name;
+        private String property;
+        private Boolean editable = null;
 
         public String getName()
         {
             return this.name;
         }
 
-        public void setMethod(String method)
+        public String getProperty()
         {
-            this.method = method;
+            return this.property;
+        }
+
+        public boolean isEditable(Comic comic)
+        {
+            // explicit configuration overrides any determination
+            if (this.editable != null) return this.editable;
+
+            Method method = null;
+            try
+            {
+                method = comic.getClass().getMethod("get" + this.property);
+            }
+            catch (NoSuchMethodException
+                   | SecurityException error)
+            {
+                this.logger.error("failed to determine if editable", error);
+            }
+            return method != null;
+        }
+
+        public void setEditable(Boolean editable)
+        {
+            this.editable = editable;
         }
 
         public void setName(String label)
         {
             this.name = label;
+        }
+
+        public void setProperty(String method)
+        {
+            this.property = method;
         }
     }
 
@@ -94,6 +121,8 @@ public class ComicTableModel extends DefaultTableModel implements
     private MessageSource messageSource;
     @Autowired
     private ComicSelectionModel comicSelectionModel;
+    @Autowired
+    private ComicRepository comicRepository;
     List<ColumnDefinition> columnNames = new ArrayList<>();
 
     @Override
@@ -162,7 +191,7 @@ public class ComicTableModel extends DefaultTableModel implements
             {
                 try
                 {
-                    Method method = comic.getClass().getMethod(this.columnNames.get(column).getMethod());
+                    Method method = comic.getClass().getMethod("get" + this.columnNames.get(column).getProperty());
 
                     return method.invoke(comic);
                 }
@@ -183,6 +212,52 @@ public class ComicTableModel extends DefaultTableModel implements
     }
 
     @Override
+    public boolean isCellEditable(int row, int column)
+    {
+        boolean result = this.columnNames.get(column).isEditable(this.comicSelectionModel.getComic(row));
+        this.logger.debug("Is cell editable? row=" + row + " column=" + column + " editable=" + result);
+        return result;
+    }
+
+    @Override
     public void selectionChanged()
     {/* do nothing */}
+
+    @Override
+    public void setValueAt(Object aValue, int row, int column)
+    {
+        Comic comic = this.comicSelectionModel.getComic(row);
+        String field = "set" + this.columnNames.get(column).getProperty();
+        Method method = null;
+        try
+        {
+            method = comic.getClass().getMethod(field, String.class);
+        }
+        catch (NoSuchMethodException
+               | SecurityException error)
+        {
+            this.logger.error("Unable to fetch method: " + field, error);
+        }
+
+        if (method == null)
+        {
+            this.logger.error("No such setter method: " + field);
+            return;
+        }
+
+        String value = aValue != null ? aValue.toString() : null;
+        this.logger.debug("Setting value: comic file=" + comic.getFilename() + " field=" + field + " value=" + value);
+        try
+        {
+            method.invoke(comic, value);
+            comicRepository.save(comic);
+        }
+        catch (IllegalAccessException
+               | IllegalArgumentException
+               | InvocationTargetException error)
+        {
+            this.logger.error("Failed to set value", error);
+        }
+    }
+
 }
